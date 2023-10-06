@@ -1,0 +1,8 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "react所有辅助公用方法及类型定义",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
