@@ -66,7 +66,7 @@ export class FiberRootNode {
   }
 }
 
-export const createWorkingInProgress = (
+export const createWorkInProgress = (
   current: FiberNode,
   pendingProps: Props
 ): FiberNode => {
