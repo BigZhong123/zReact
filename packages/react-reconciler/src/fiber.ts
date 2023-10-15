@@ -77,6 +77,7 @@ export const createWorkingInProgress = (
     wip = new FiberNode(current.tag, pendingProps, current.key);
     wip.stateNode = current.stateNode;
     wip.alternate = current;
+    current.alternate = wip;
   } else {
     // update
     wip.pendingProps = pendingProps;
@@ -102,8 +103,7 @@ export function createFiberFromElement(element: ReactElementType): FiberNode {
   } else if (typeof type !== "function" && __DEV__) {
     console.warn("未定义的type类型", element);
   }
-
-  const fiber = new FiberNode(type, props, key);
+  const fiber = new FiberNode(fiberTag, props, key);
   fiber.type = type;
   return fiber;
 }

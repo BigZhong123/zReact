@@ -69,7 +69,6 @@ export const jsxDEV = (type: ElementType, config: any) => {
 
   for (const prop in config) {
     const val = config[prop];
-    console.log(111, prop);
     if (prop === "key") {
       if (val !== undefined) {
         key = "" + val;

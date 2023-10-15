@@ -10,6 +10,8 @@ function ChildReconciler(shouleTrackEffects: boolean) {
     currentFiber: FiberNode | null,
     element: ReactElementType
   ) {
+    // 防止未使用的报错
+    currentFiber;
     const fiber = createFiberFromElement(element);
     fiber.return = returnFiber;
     return fiber;
