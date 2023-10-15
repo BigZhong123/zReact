@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint --ext .ts,.js,.jsx,.tsx --fix --quiet ./packages",
     "build:dev": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/dev.config.js",
-    "build:react": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/react.config.js"
+    "build:react": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/react.config.js",
+    "demo": "vite serve demos/test-fc --config scripts/vite/vite.config.js --force"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.7.1",
@@ -24,6 +25,14 @@
     "rimraf": "^5.0.5",
     "rollup": "^3.29.2",
     "rollup-plugin-generate-package-json": "^3.2.0",
-    "rollup-plugin-typescript2": "^0.36.0"
+    "rollup-plugin-typescript2": "^0.36.0",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
   }
 }
