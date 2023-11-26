@@ -250,7 +250,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
     if (currentFiber !== null) {
       // 兜底删除
-      deleteChild(returnFiber, currentFiber);
+      deleteRemainingChildren(returnFiber, currentFiber);
     }
 
     if (__DEV__) {
