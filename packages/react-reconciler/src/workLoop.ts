@@ -1,9 +1,19 @@
 import { scheduleMicroTask } from "hostConfig";
 import { beginWork } from "./beginWork";
-import { commitMutationEffects } from "./commitWork";
+import {
+  commitHookEffectListCreate,
+  commitHookEffectListDestroy,
+  commitHookEffectListUnmount,
+  commitMutationEffects,
+} from "./commitWork";
 import { completeWork } from "./completeWork";
-import { FiberNode, FiberRootNode, createWorkInProgress } from "./fiber";
-import { MutationMask, NoFlags } from "./fiberFlags";
+import {
+  FiberNode,
+  FiberRootNode,
+  PendingPassiveEffects,
+  createWorkInProgress,
+} from "./fiber";
+import { MutationMask, NoFlags, PassiveMask } from "./fiberFlags";
 import {
   Lane,
   NoLane,
@@ -14,9 +24,15 @@ import {
 } from "./fiberLanes";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { HostRoot } from "./workTags";
+import {
+  unstable_scheduleCallback as scheduleCallback,
+  unstable_NormalPriority as NormalPriority,
+} from "scheduler";
+import { HookHasEffect, Passiive } from "./hookEffectTags";
 
 let workInProgress: FiberNode | null;
 let wipRootRenderLane: Lane = NoLane;
+let rootDoesHasPassiveEffects: boolean = false;
 
 function prepareFreshStack(root: FiberRootNode, lane: Lane) {
   workInProgress = createWorkInProgress(root.current, {});
@@ -126,6 +142,21 @@ function commitRoot(root: FiberRootNode) {
 
   markRootFinished(root, lane);
 
+  if (
+    (finishedWork.flags & PassiveMask) !== NoFlags ||
+    (finishedWork.subtreeFlage & PassiveMask) !== NoFlags
+  ) {
+    if (!rootDoesHasPassiveEffects) {
+      rootDoesHasPassiveEffects = true;
+      // 调度副作用
+      scheduleCallback(NormalPriority, () => {
+        // 执行副作用
+        flushPassiveEffects(root.pendingPassiveEffects);
+        return;
+      });
+    }
+  }
+
   // 判断是否存在3个子阶段需要执行的操作
   // root.flags root.subtreeFlags
   const subtreeHasEffect =
@@ -138,12 +169,34 @@ function commitRoot(root: FiberRootNode) {
     // mutaition
     root.current = finishedWork;
 
-    commitMutationEffects(finishedWork);
+    commitMutationEffects(finishedWork, root);
 
     // layout
   } else {
     root.current = finishedWork;
   }
+
+  rootDoesHasPassiveEffects = false;
+  ensureRootIsScheduled(root);
+}
+
+function flushPassiveEffects(pendingPassiveEffects: PendingPassiveEffects) {
+  pendingPassiveEffects.unmount.forEach((effect) => {
+    commitHookEffectListUnmount(Passiive, effect);
+  });
+  pendingPassiveEffects.unmount = [];
+
+  pendingPassiveEffects.update.forEach((effect) => {
+    commitHookEffectListDestroy(Passiive | HookHasEffect, effect);
+  });
+
+  pendingPassiveEffects.update.forEach((effect) => {
+    commitHookEffectListCreate(Passiive | HookHasEffect, effect);
+  });
+
+  pendingPassiveEffects.update = [];
+
+  flushSyncCallbacks();
 }
 
 function workLoop() {

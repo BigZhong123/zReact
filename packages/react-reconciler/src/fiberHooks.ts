@@ -48,6 +48,8 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
   currentlyRenderingFiber = wip;
   // 重置 hooks 链表
   wip.memoizedState = null;
+  // 重置 effect 链表
+  wip.updateQueue = null;
   renderLane = lane;
 
   const current = wip.alternate;
@@ -81,20 +83,70 @@ const HooksDispatcherOnMount: Dispatcher = {
 const HooksDispatcherOnUpdate: Dispatcher = {
   useState: updateState,
   // TODO 防止代码报错先写上
-  useEffect: null as any,
+  useEffect: updateEffect,
 };
 
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
   const hook = mountWorkInProgressHook();
-  const nextDps = deps === undefined ? null : deps;
+  const nextDeps = deps === undefined ? null : deps;
   (currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
 
   hook.memoizedState = pushEffect(
     Passiive | HookHasEffect,
     create,
     undefined,
-    nextDps
+    nextDeps
   );
+}
+
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  let destroy: EffectCallback | void;
+
+  if (currentHook !== null) {
+    const prevEffect = currentHook.memoizedState as Effect;
+    destroy = prevEffect.destroy;
+
+    if (nextDeps !== null) {
+      // 浅比较
+      const prevDeps = prevEffect.deps;
+      if (areHookUnputEqual(nextDeps, prevDeps)) {
+        hook.memoizedState = pushEffect(Passiive, create, destroy, nextDeps);
+        return;
+      }
+    }
+    // 浅比较 不相等
+    (currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+    hook.memoizedState = pushEffect(
+      Passiive | HookHasEffect,
+      create,
+      destroy,
+      nextDeps
+    );
+  }
+
+  // (currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
+
+  // hook.memoizedState = pushEffect(
+  //   Passiive | HookHasEffect,
+  //   create,
+  //   undefined,
+  //   nextDeps
+  // );
+}
+
+function areHookUnputEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+  if (prevDeps === null || nextDeps === null) {
+    return false;
+  }
+  for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+    if (Object.is(prevDeps[i], nextDeps[i])) {
+      continue;
+    }
+    return false;
+  }
+  return true;
 }
 
 function pushEffect(
